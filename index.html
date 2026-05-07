@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Architect Pro | المايسترو</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --blue-neon: #00d2ff;
+            --green-neon: #00ff41;
+            --red-neon: #ff3333;
+            --bg-dark: #050505;
+        }
+
+        /* تعديل الـ body للسماح بالتمرير */
+        body {
+            background: var(--bg-dark);
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column; /* التغيير لعمودي للسماح بالطول */
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto; /* السماح بالتمرير الرأسي */
+            overflow-x: hidden;
+            padding: 40px 0;
+            position: relative;
+        }
+
+        /* تثبيت الخلفية عشان متتحركش مع السكروول وتفضل مغطية الشاشة */
+        .bg-3d-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 210, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px);
+            animation: grid-drift 20s linear infinite;
+        }
+
+        @keyframes grid-drift {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 0% 100%; }
+        }
+
+        .bg-glow {
+            position: fixed;
+            top: 50%; left: 50%;
+            width: 150vw; height: 150vh;
+            background: radial-gradient(circle, rgba(0,210,255,0.07) 0%, rgba(5,5,5,1) 70%);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            z-index: 1;
+            padding-bottom: 50px; /* مسافة أمان في نهاية الصفحة */
+        }
+
+        .main-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #fff, var(--blue-neon), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+
+        .glass-panel {
+            background: rgba(15, 15, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            padding: clamp(20px, 5vw, 50px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+            margin-bottom: 40px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #222;
+            border-radius: 15px;
+            color: #fff;
+            padding: 20px;
+            font-size: 1.1rem;
+            outline: none;
+            resize: vertical; /* السماح للمستخدم بتكبير المربع لو أراد */
+            text-align: center;
+            font-family: 'Cairo', sans-serif;
+            box-sizing: border-box;
+        }
+
+        textarea:focus { border-color: var(--blue-neon); box-shadow: 0 0 20px rgba(0, 210, 255, 0.2); }
+
+        .btn-group {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            border-radius: 50px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Cairo', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-start { background: var(--blue-neon); color: #000; }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 25px var(--blue-neon); }
+
+        .btn-build { 
+            background: transparent; 
+            color: var(--green-neon); 
+            border: 2px solid var(--green-neon); 
+            display: none; 
+        }
+        .btn-build:hover { background: var(--green-neon); color: #000; box-shadow: 0 0 25px var(--green-neon); }
+
+        /* لودر التحميل */
+        .loading-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .spinner {
+            width: 25px; height: 25px;
+            border: 3px solid rgba(0, 210, 255, 0.1);
+            border-top: 3px solid var(--blue-neon);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .blink-text { animation: blink 1.5s infinite; color: #888; }
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        /* شبكة النتائج - تم تعديلها لتكون مرنة */
+        .results-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(20, 20, 20, 0.7);
+            border-radius: 20px;
+            padding: 25px;
+            border-top: 4px solid var(--blue-neon);
+            backdrop-filter: blur(10px);
+            height: fit-content; /* تجعل الكارت يطول مع المحتوى */
+        }
+
+        .card h3 { color: var(--blue-neon); margin-top: 0; border-bottom: 1px solid #222; padding-bottom: 10px; font-size: 1.1rem; }
+        .card ul { list-style: none; padding: 0; margin: 0; }
+        .card li { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #ccc; font-size: 0.95rem; }
+        
+        /* تلوين الكروت */
+        .card.green { border-top-color: var(--green-neon); }
+        .card.green h3 { color: var(--green-neon); }
+        .card.red { border-top-color: var(--red-neon); }
+        .card.red h3 { color: var(--red-neon); }
+
+    </style>
+</head>
+<body>
+    <div class="bg-3d-grid"></div>
+    <div class="bg-glow"></div>
+
+    <div class="container">
+        <h1 class="main-title">Logic <span>Architect</span></h1>
+
+        <div class="glass-panel">
+            <textarea id="ideaInput" placeholder="أدخل فكرتك هنا.. المايسترو بانتظارك"></textarea>
+            
+            <div id="loadingContainer" class="loading-container">
+                <div class="spinner"></div>
+                <div class="blink-text">جاري بناء الخطّة الذهبّية...</div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-start" onclick="generatePlan()">
+                    <i class="fas fa-magic"></i> ابدأ صنع الخطّة
+                </button>
+                <button id="buildBtn" class="btn btn-build" onclick="buildProject()">
+                    <i class="fas fa-hammer"></i> صناعة الملفات الآن
+                </button>
+            </div>
+        </div>
+
+        <div id="resultsArea" class="results-grid">
+            <div class="card">
+                <h3><i class="fas fa-folder"></i> الهيكل</h3>
+                <ul id="folderList"></ul>
+            </div>
+            <div class="card green">
+                <h3><i class="fas fa-code"></i> الملفات</h3>
+                <ul id="fileList"></ul>
+            </div>
+            <div class="card red">
+                <h3><i class="fas fa-tasks"></i> المنطق</h3>
+                <ul id="stepList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        async function generatePlan() {
+            const idea = document.getElementById('ideaInput').value;
+            if(!idea) return;
+
+            document.getElementById('loadingContainer').style.display = 'flex';
+            document.getElementById('resultsArea').style.display = 'none';
+            document.getElementById('buildBtn').style.display = 'none';
+
+            try {
+                const r = await fetch('http://127.0.0.1:5000/architect', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({idea})
+                });
+                const res = await r.json();
+                if(res.status === "success") {
+                    currentData = res.data;
+                    render(res.data);
+                }
+            } catch (e) { alert("تأكد من تشغيل السيرفر"); }
+            finally { document.getElementById('loadingContainer').style.display = 'none'; }
+        }
+
+        function render(data) {
+            const getStr = (v) => typeof v === 'object' ? (v.name || v.step || v.description) : v;
+            document.getElementById('folderList').innerHTML = data.folders.map(f => `<li>${getStr(f)}</li>`).join('');
+            document.getElementById('fileList').innerHTML = Object.keys(data.files).map(f => `<li>${f}</li>`).join('');
+            document.getElementById('stepList').innerHTML = data.logic_steps.map(s => `<li>${getStr(s)}</li>`).join('');
+            
+            document.getElementById('resultsArea').style.display = 'grid';
+            document.getElementById('buildBtn').style.display = 'inline-block';
+            
+            // حركة ذكية: السكروول ينزل شوية عشان يوريك إن فيه نتائج ظهرت تحت
+            window.scrollBy({ top: 300, behavior: 'smooth' });
+        }
+
+        async function buildProject() {
+            const btn = document.getElementById('buildBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البناء...';
+            try {
+                const r = await fetch('http://127.0.0.1:5000/build', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data: currentData})
+                });
+                const res = await r.json();
+                if(res.status === "success") alert("تم! الملفات في: " + res.path);
+            } catch (e) { alert("خطأ في البناء"); }
+            finally { btn.innerHTML = '<i class="fas fa-hammer"></i> صناعة الملفات الآن'; }
+        }
+    </script>
+</body>
+</html>
