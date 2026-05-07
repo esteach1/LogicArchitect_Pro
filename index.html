@@ -14,23 +14,21 @@
             --bg-dark: #050505;
         }
 
-        /* تعديل الـ body للسماح بالتمرير */
         body {
             background: var(--bg-dark);
             color: #fff;
             font-family: 'Cairo', sans-serif;
             margin: 0;
             display: flex;
-            flex-direction: column; /* التغيير لعمودي للسماح بالطول */
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-y: auto; /* السماح بالتمرير الرأسي */
+            overflow-y: auto;
             overflow-x: hidden;
             padding: 40px 0;
             position: relative;
         }
 
-        /* تثبيت الخلفية عشان متتحركش مع السكروول وتفضل مغطية الشاشة */
         .bg-3d-grid {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -61,7 +59,7 @@
             width: 90%;
             max-width: 1000px;
             z-index: 1;
-            padding-bottom: 50px; /* مسافة أمان في نهاية الصفحة */
+            padding-bottom: 50px;
         }
 
         .main-title {
@@ -95,7 +93,7 @@
             padding: 20px;
             font-size: 1.1rem;
             outline: none;
-            resize: vertical; /* السماح للمستخدم بتكبير المربع لو أراد */
+            resize: vertical;
             text-align: center;
             font-family: 'Cairo', sans-serif;
             box-sizing: border-box;
@@ -135,7 +133,6 @@
         }
         .btn-build:hover { background: var(--green-neon); color: #000; box-shadow: 0 0 25px var(--green-neon); }
 
-        /* لودر التحميل */
         .loading-container {
             display: none;
             justify-content: center;
@@ -154,7 +151,6 @@
         .blink-text { animation: blink 1.5s infinite; color: #888; }
         @keyframes blink { 50% { opacity: 0.3; } }
 
-        /* شبكة النتائج - تم تعديلها لتكون مرنة */
         .results-grid {
             display: none;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -168,14 +164,13 @@
             padding: 25px;
             border-top: 4px solid var(--blue-neon);
             backdrop-filter: blur(10px);
-            height: fit-content; /* تجعل الكارت يطول مع المحتوى */
+            height: fit-content;
         }
 
         .card h3 { color: var(--blue-neon); margin-top: 0; border-bottom: 1px solid #222; padding-bottom: 10px; font-size: 1.1rem; }
         .card ul { list-style: none; padding: 0; margin: 0; }
         .card li { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #ccc; font-size: 0.95rem; }
         
-        /* تلوين الكروت */
         .card.green { border-top-color: var(--green-neon); }
         .card.green h3 { color: var(--green-neon); }
         .card.red { border-top-color: var(--red-neon); }
@@ -226,6 +221,8 @@
 
     <script>
         let currentData = null;
+        // الرابط الرسمى لموقعك على Vercel
+        const API_BASE_URL = 'https://logic-architect-pro.vercel.app';
 
         async function generatePlan() {
             const idea = document.getElementById('ideaInput').value;
@@ -236,7 +233,7 @@
             document.getElementById('buildBtn').style.display = 'none';
 
             try {
-                const r = await fetch('http://127.0.0.1:5000/architect', {
+                const r = await fetch(`${API_BASE_URL}/architect`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({idea})
@@ -245,13 +242,17 @@
                 if(res.status === "success") {
                     currentData = res.data;
                     render(res.data);
+                } else {
+                    alert("خطأ من السيرفر: " + res.message);
                 }
-            } catch (e) { alert("تأكد من تشغيل السيرفر"); }
+            } catch (e) { 
+                alert("فشل الاتصال بالسيرفر أونلاين. تأكد من حالة Deployment على Vercel."); 
+            }
             finally { document.getElementById('loadingContainer').style.display = 'none'; }
         }
 
         function render(data) {
-            const getStr = (v) => typeof v === 'object' ? (v.name || v.step || v.description) : v;
+            const getStr = (v) => typeof v === 'object' ? (v.name || v.step || v.description || JSON.stringify(v)) : v;
             document.getElementById('folderList').innerHTML = data.folders.map(f => `<li>${getStr(f)}</li>`).join('');
             document.getElementById('fileList').innerHTML = Object.keys(data.files).map(f => `<li>${f}</li>`).join('');
             document.getElementById('stepList').innerHTML = data.logic_steps.map(s => `<li>${getStr(s)}</li>`).join('');
@@ -259,7 +260,6 @@
             document.getElementById('resultsArea').style.display = 'grid';
             document.getElementById('buildBtn').style.display = 'inline-block';
             
-            // حركة ذكية: السكروول ينزل شوية عشان يوريك إن فيه نتائج ظهرت تحت
             window.scrollBy({ top: 300, behavior: 'smooth' });
         }
 
@@ -267,14 +267,16 @@
             const btn = document.getElementById('buildBtn');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البناء...';
             try {
-                const r = await fetch('http://127.0.0.1:5000/build', {
+                const r = await fetch(`${API_BASE_URL}/build`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({data: currentData})
                 });
                 const res = await r.json();
-                if(res.status === "success") alert("تم! الملفات في: " + res.path);
-            } catch (e) { alert("خطأ في البناء"); }
+                if(res.status === "success") {
+                    alert("تم بناء المشروع بنجاح أونلاين!");
+                }
+            } catch (e) { alert("خطأ في عملية البناء أونلاين"); }
             finally { btn.innerHTML = '<i class="fas fa-hammer"></i> صناعة الملفات الآن'; }
         }
     </script>
